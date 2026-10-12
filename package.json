@@ -1,0 +1,11 @@
+{
+  "name": "scaler-respect-at-work",
+  "version": "1.0.0",
+  "description": "POSH & POCSO compliance training, deployed on Vercel with Google Workspace SSO and an admin completion dashboard",
+  "private": true,
+  "dependencies": {
+    "@vercel/postgres": "^0.10.0",
+    "google-auth-library": "^9.11.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

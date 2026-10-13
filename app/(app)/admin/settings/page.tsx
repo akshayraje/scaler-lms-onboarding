@@ -3,6 +3,8 @@ import { TemplateEditor } from "@/components/admin/TemplateEditor";
 import { getTemplates } from "@/lib/notifications/store";
 import { hrmsConnection, slackConfig, smtpConfig } from "@/lib/automation/config";
 import { getSettings } from "@/lib/settings";
+import { courseUrl } from "@/lib/urls";
+import { COURSES } from "@/content/courses";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings · Admin" };
@@ -44,7 +46,7 @@ export default async function SettingsPage() {
         title="Notification templates"
         description="The same Markdown is used for email and Slack. Fields like {{full_name}} are filled in for each person."
       >
-        <TemplateEditor initial={templates} />
+        <TemplateEditor initial={templates} sampleCourseUrl={courseUrl(COURSES[0].slug)} />
       </Section>
       <Section title="HRMS" description="The employee master (joining dates, managers, leavers) is synced daily.">
         <HrmsStatus connection={connection} />

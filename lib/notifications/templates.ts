@@ -10,7 +10,8 @@ import { HRMS_FIELDS, type HrmsPlaceholder } from "@/lib/hrms-fields";
 /** App-provided fields (not from the HRMS). */
 const APP_FIELDS = [
   { key: "course_title", label: "Course title", example: "Respect at Work" },
-  { key: "course_link", label: "Course link", example: "https://learn.scaler.com/courses/posh-pocso" },
+  // Built from AUTH_URL at send time; see sampleValues() for the preview value.
+  { key: "course_link", label: "Course link", example: "<app URL>/courses/<course>" },
   { key: "due_date", label: "Due date", example: "20 October 2026" },
   { key: "due_status", label: "Due status (due in 3 days / due today / overdue by 2 days)", example: "due in 3 days" },
   { key: "expiry_date", label: "Certificate expiry date", example: "27 October 2026" },
@@ -26,7 +27,10 @@ export const FIELDS: { key: FieldKey; label: string; group: "Employee (HRMS)" | 
 ];
 
 export type FieldValues = Partial<Record<FieldKey, string>>;
-export const SAMPLE_VALUES: FieldValues = Object.fromEntries(FIELDS.map((f) => [f.key, f.example]));
+/** Example values for previews; `courseLink` is a real course URL built on the server from AUTH_URL. */
+export function sampleValues(courseLink: string): FieldValues {
+  return { ...Object.fromEntries(FIELDS.map((f) => [f.key, f.example])), course_link: courseLink };
+}
 
 const FIELD_KEYS = new Set<string>(FIELDS.map((f) => f.key));
 const PLACEHOLDER = /\{\{\s*([a-z_]+)\s*\}\}/g;
@@ -265,7 +269,7 @@ export function emailDocument(bodyHtml: string, cta: string, url: string) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #e1e5ec;border-radius:14px">
 <tr><td style="padding:28px 28px 8px">${bodyHtml}
-<a href="${escapeHtml(url)}" style="display:inline-block;background:#4c86ff;color:#061b4d;font-weight:600;text-decoration:none;padding:12px 22px;border-radius:8px">${escapeHtml(cta)}</a>
+<a href="${escapeHtml(url)}" style="display:inline-block;background:#4c86ff;color:#ffffff;font-weight:600;text-decoration:none;padding:12px 22px;border-radius:8px">${escapeHtml(cta)}</a>
 <p style="margin:20px 0 0;font-size:12px;color:#5b6473">Or open: <a href="${escapeHtml(url)}" style="color:#0043c9">${escapeHtml(url)}</a></p></td></tr>
 <tr><td style="padding:16px 28px 24px;font-size:11px;color:#8890a0">Sent by Scaler Learning — internal training notifications.</td></tr>
 </table></td></tr></table></body></html>`;

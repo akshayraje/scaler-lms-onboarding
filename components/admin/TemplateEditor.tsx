@@ -19,7 +19,7 @@ import {
   emailDocument,
   FIELDS,
   renderMessage,
-  SAMPLE_VALUES,
+  sampleValues,
   slackPreviewHtml,
   TEMPLATES,
   unknownFields,
@@ -33,7 +33,7 @@ type FieldName = "subject" | "body" | "cta";
 
 const GROUPS = [...new Set(FIELDS.map((f) => f.group))];
 
-export function TemplateEditor({ initial }: { initial: Initial }) {
+export function TemplateEditor({ initial, sampleCourseUrl }: { initial: Initial; sampleCourseUrl: string }) {
   const [saved, setSaved] = useState(initial);
   const [key, setKey] = useState<TemplateKey>(TEMPLATES[0].key);
   const [draft, setDraft] = useState<MessageTemplate>(initial[TEMPLATES[0].key].template);
@@ -47,8 +47,9 @@ export function TemplateEditor({ initial }: { initial: Initial }) {
   const meta = TEMPLATES.find((t) => t.key === key)!;
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved[key].template);
   const unknown = unknownFields(draft.subject, draft.body, draft.cta);
-  const rendered = useMemo(() => renderMessage(draft, SAMPLE_VALUES), [draft]);
-  const url = SAMPLE_VALUES.course_link!;
+  const samples = useMemo(() => sampleValues(sampleCourseUrl), [sampleCourseUrl]);
+  const rendered = useMemo(() => renderMessage(draft, samples), [draft, samples]);
+  const url = samples.course_link!;
 
   function select(next: TemplateKey) {
     if (next === key) return;

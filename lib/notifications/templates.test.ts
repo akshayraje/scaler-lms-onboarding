@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { HRMS_FIELDS } from "@/lib/hrms-fields";
-import { FIELDS, markdownToPlainText, markdownToSlack, renderMessage, SAMPLE_VALUES, TEMPLATES, unknownFields } from "./templates";
+import { FIELDS, markdownToPlainText, markdownToSlack, renderMessage, sampleValues, TEMPLATES, unknownFields } from "./templates";
 
 describe("markdown → Slack mrkdwn", () => {
   it("converts emphasis, links and lists", () => {
@@ -55,9 +55,12 @@ describe("default templates", () => {
   });
   it("render with sample data without leftover placeholders", () => {
     for (const tpl of TEMPLATES) {
-      const r = renderMessage(tpl.defaults, SAMPLE_VALUES);
+      const r = renderMessage(tpl.defaults, sampleValues("https://lms.example.test/courses/posh-pocso"));
       expect(r.subject + r.slackMrkdwn + r.emailHtml).not.toMatch(/\{\{/);
     }
+  });
+  it("sample values use the course link passed in", () => {
+    expect(sampleValues("https://lms.example.test/courses/x").course_link).toBe("https://lms.example.test/courses/x");
   });
   it("flags unknown fields, including derived ones not in the HRMS mapping", () => {
     expect(unknownFields("Hi {{full_name}} {{nickname}} {{manager_first_name}}")).toEqual(["nickname", "manager_first_name"]);

@@ -12,9 +12,10 @@ import { fetchHrmsEmployees } from "@/lib/automation/hrms";
 import { isJobName, JOBS, runJob } from "@/lib/automation/jobs";
 import { summaryText } from "@/lib/automation/summary";
 import { saveTemplate } from "@/lib/notifications/store";
-import { SAMPLE_VALUES, TEMPLATE_KEYS, unknownFields, type TemplateKey } from "@/lib/notifications/templates";
+import { sampleValues, TEMPLATE_KEYS, unknownFields, type TemplateKey } from "@/lib/notifications/templates";
 import { saveSettings, type NotificationMode } from "@/lib/settings";
 import { requireAdmin } from "@/lib/session";
+import { courseUrl } from "@/lib/urls";
 
 export type ActionResult = { ok: boolean; message: string } | null;
 
@@ -46,7 +47,7 @@ export async function testNotificationAction(): Promise<ActionResult> {
   if (!providers.length) return { ok: false, message: "No notification providers are configured (set SMTP_* and/or SLACK_BOT_TOKEN)." };
 
   const course = COURSES[0];
-  const url = `${(process.env.AUTH_URL ?? "http://localhost:3000").replace(/\/$/, "")}/courses/${course.slug}`;
+  const url = courseUrl(course.slug);
   const { template } = (await getTemplates()).course_assigned;
   try {
     const outcomes = await notify(
@@ -54,7 +55,7 @@ export async function testNotificationAction(): Promise<ActionResult> {
         dedupeKey: `test:${admin.id}:${Date.now()}`,
         to: admin.email,
         template: { ...template, subject: `[Test] ${template.subject}` },
-        values: { ...SAMPLE_VALUES, full_name: admin.name, email: admin.email, course_title: course.title, course_link: url },
+        values: { ...sampleValues(url), full_name: admin.name, email: admin.email, course_title: course.title },
         url,
         meta: { userId: admin.id, courseId: course.slug, campaign: "test", step: 0 },
       },

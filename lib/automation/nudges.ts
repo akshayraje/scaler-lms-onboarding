@@ -6,6 +6,7 @@ import { certificates, employees, enrollments, user } from "@/lib/db/schema";
 import { getSettings, type NotificationMode } from "@/lib/settings";
 import { getTemplates } from "@/lib/notifications/store";
 import { dueStep } from "@/lib/course-settings";
+import { courseUrl } from "@/lib/urls";
 import { getAllCourseSettings } from "@/lib/course-settings-store";
 import { notify, type NotifyTally } from "@/lib/notifications/notify";
 import { availableProviders } from "@/lib/notifications/providers";
@@ -20,7 +21,6 @@ export type Campaign = "new_joiner" | "renewal";
 // dry-run to live never fires a backlog.
 
 const DAY = 864e5;
-const appUrl = () => (process.env.AUTH_URL ?? "http://localhost:3000").replace(/\/$/, "");
 const startOfDay = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
 
 type Candidate = {
@@ -152,8 +152,7 @@ export async function dispatchNudges(opts: { jobRunId?: number } = {}): Promise<
     summary.due++;
     const course = getCourse(c.courseId);
     if (!course) continue;
-    // Deep link: lands on the course, or goes through Google sign-in and back.
-    const url = `${appUrl()}/courses/${course.slug}`;
+    const url = courseUrl(course.slug);
     const escalate = steps[step].ccManager && !!c.managerEmail;
     await notify(
       {

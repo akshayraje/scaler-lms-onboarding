@@ -23,12 +23,20 @@ export default async function CoursesAdminPage() {
                   {s.certificate.validityMonths ? ` · certificate valid ${s.certificate.validityMonths} months` : " · certificate never expires"}
                 </p>
               </div>
-              <Link
-                href={`/admin/courses/${c.slug}`}
-                className="rounded-lg border px-3 py-2 text-sm font-semibold text-primary hover:border-primary"
-              >
-                Edit settings
-              </Link>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={`/admin/courses/${c.slug}/report`}
+                  className="rounded-lg border px-3 py-2 text-sm font-semibold text-primary hover:border-primary"
+                >
+                  View report
+                </Link>
+                <Link
+                  href={`/admin/courses/${c.slug}`}
+                  className="rounded-lg border px-3 py-2 text-sm font-semibold text-primary hover:border-primary"
+                >
+                  Edit settings
+                </Link>
+              </div>
             </div>
             <dl className="grid gap-4 text-sm md:grid-cols-3">
               <div>

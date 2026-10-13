@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { href: "/admin", label: "Reports" },
   { href: "/admin/courses", label: "Courses" },
   { href: "/admin/automation", label: "Automation" },
   { href: "/admin/settings", label: "Settings" },
@@ -16,7 +15,7 @@ export function AdminTabs() {
   return (
     <nav className="mb-6 flex gap-1 overflow-x-auto border-b" aria-label="Admin sections">
       {TABS.map((t) => {
-        const active = t.href === "/admin" ? pathname === "/admin" : pathname.startsWith(t.href);
+        const active = pathname.startsWith(t.href);
         return (
           <Link
             key={t.href}

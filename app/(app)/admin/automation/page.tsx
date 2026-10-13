@@ -1,4 +1,5 @@
 import { count, desc, eq } from "drizzle-orm";
+import { AuditTable } from "@/components/admin/AuditTable";
 import { RunJobButton } from "@/components/admin/RunJobButton";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -155,6 +156,12 @@ export default async function AutomationPage() {
             ))}
           </TableBody>
         </Table>
+      </section>
+
+      <section className={card}>
+        <h2 className="text-xl">Audit log</h2>
+        <p className="mb-2 text-sm text-muted-foreground">Sign-ins, settings changes and course activity across the app (latest 200).</p>
+        <AuditTable />
       </section>
     </>
   );

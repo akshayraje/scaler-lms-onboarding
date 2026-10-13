@@ -52,7 +52,7 @@ export function UserMenu({ user }: { user: MenuUser }) {
         </DropdownMenuItem>
         {user.isAdmin && (
           <DropdownMenuItem asChild>
-            <Link href="/admin">
+            <Link href="/admin/courses">
               <LayoutDashboard /> Admin dashboard
             </Link>
           </DropdownMenuItem>

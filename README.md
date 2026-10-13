@@ -143,9 +143,9 @@ scripts/                    migrate, import-legacy
 
 ### Company-specific details
 
-IC members, the complaint email/form, the POSH policy link, the appellate authority, the
-district Local Committee and counselling details live in **`content/org.ts`**. Until filled in,
-they render as clearly marked "to be added by HR" placeholders in the course.
+The Internal Committee members, the complaint helpline email and the POSH policy link live in
+**`content/org.ts`** and are shown in the course's "Reporting at Our Company" module and the policy
+acknowledgement step. Edit that file (and redeploy) when the committee changes.
 
 ### Certification rules
 

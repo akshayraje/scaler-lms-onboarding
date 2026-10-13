@@ -1,10 +1,10 @@
 import { CertificateValidityNote, EstimatedTime } from "@/components/course/context";
 import { InfoTile, PlainList, ScenarioBox, TileGrid } from "@/components/course/kit";
-import { PolicyCoverage, PolicyLink, ReportingContacts } from "@/components/course/org-blocks";
+import { PolicyLink, ReportingContacts } from "@/components/course/org-blocks";
 import type { CourseDefinition } from "@/lib/course-types";
 
 // Respect at Work — POSH & POCSO awareness.
-// Company-specific details (IC contacts, policy link…) come from content/org.ts.
+// Company-specific details (IC members, helpline, policy link) come from content/org.ts.
 // The final assessment's answer key is in ./exam.server.ts (server-only); keep the
 // two in sync when editing questions, and vary which option position is correct.
 
@@ -92,7 +92,6 @@ export const poshPocso: CourseDefinition = {
             <>
               Every woman at the workplace — permanent, contract, temporary or intern staff, daily-wage workers, and
               even clients or visitors on the premises, regardless of age or role.
-              <PolicyCoverage />
             </>
           ),
         },

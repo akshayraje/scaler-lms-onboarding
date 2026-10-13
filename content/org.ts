@@ -1,30 +1,24 @@
-// Company-specific details shown in courses (reporting contacts, policy links…).
-// Kept in one place so HR can update them without touching course content.
-// `null` / empty values render as a clearly marked "to be added" placeholder.
+// Company-specific details shown in courses (reporting contacts, policy link).
+// Kept in one place so they can be updated without touching course content.
 
-export type ContactPerson = { name: string; role: string; email?: string; phone?: string };
+export type CommitteeMember = { name: string; designation: string; role: string };
 
 export const ORG = {
-  /** Link to the company's POSH policy document. */
-  poshPolicyUrl: null as string | null,
-  /** Who the company policy covers, if broader than the Act (e.g. "employees of all genders"). */
-  policyCoverage: null as string | null,
+  /** The company's POSH policy document. */
+  poshPolicyUrl: "https://sites.google.com/scaler.com/policies-guidelines/posh",
 
   internalCommittee: {
     /** Presiding Officer first. */
-    members: [] as ContactPerson[],
-    /** Shared inbox for complaints. */
-    email: null as string | null,
-    /** Online complaint form, if any. */
-    formUrl: null as string | null,
+    members: [
+      { name: "Sneha Sindhe", designation: "Director, People", role: "Presiding Officer" },
+      { name: "Akshay Raje", designation: "Head, People & Culture, People", role: "Member" },
+      { name: "Ashwini Senad", designation: "Sr. Manager, HRBP, People", role: "Member" },
+      { name: "Rishabh Shah", designation: "Head, Legal", role: "Member" },
+      { name: "Palash Qureshi", designation: "Associate Vice President - Business Development", role: "Member" },
+      { name: "Shreya Moolya", designation: "Associate Director - Growth Marketing", role: "Member" },
+      { name: "Anuj Sharma", designation: "Director & Principal Consultant", role: "External Member" },
+    ] satisfies CommitteeMember[],
+    /** Where complaints and concerns are sent. */
+    email: "helpline@interviewbit.com",
   },
-
-  /** Where appeals against IC recommendations go (per service rules). */
-  appellateAuthority: null as string | null,
-
-  /** District Local Committee, for complaints against the employer itself. */
-  localCommittee: null as { district: string; contact: string } | null,
-
-  /** Counselling / Employee Assistance Programme details. */
-  counselling: null as string | null,
 };

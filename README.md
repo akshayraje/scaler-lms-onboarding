@@ -64,7 +64,6 @@ Compose publishes Postgres on host port **5433** (set `DB_HOST_PORT` to change i
 | `pnpm lint` | Type-check |
 | `pnpm db:generate` | Generate a new SQL migration after editing `lib/db/schema.ts` |
 | `pnpm db:migrate` | Apply migrations + sync catalog (also runs automatically on server start) |
-| `pnpm db:import-legacy` | Import data from the old Vercel Postgres (see below) |
 
 ---
 
@@ -87,22 +86,6 @@ The same image runs unchanged on any other Docker host: give it a `DATABASE_URL`
 
 ---
 
-## Migrating data from the old Vercel deployment
-
-Users, module progress, exam attempts, certificates (same codes) and the audit log are imported
-into the new schema. Users are matched by email and linked to their Google account on first sign-in.
-
-```bash
-LEGACY_DATABASE_URL='postgres://…old vercel/neon url…' \
-DATABASE_URL='postgres://…new db…' \
-pnpm db:import-legacy
-```
-
-The script is idempotent, so it is safe to re-run. Certificates printed by the old app link to
-`/api/verify/<code>`; that path still works and redirects to `/verify/<code>`.
-
----
-
 ## Project layout
 
 ```
@@ -111,7 +94,6 @@ app/
   page.tsx                  Learner dashboard: "Your courses"
   courses/[slug]/           Course player page + server actions (progress, exam, transcript)
   admin/                    Roster & audit log, per course (admin role only)
-  verify/[code]/            Public certificate verification
   api/auth/[...nextauth]/   Auth.js handler
   api/health/               Health check
 components/course/          CoursePlayer (rail / mobile drawer), module renderers, kit.tsx building blocks
@@ -126,7 +108,7 @@ lib/
   db/schema.ts              Drizzle schema (auth + LMS tables)
   grading.ts                Pure exam grading (unit-tested)
 drizzle/                    Generated SQL migrations
-scripts/                    migrate, import-legacy
+scripts/                    migrate
 ```
 
 ### Adding a course
@@ -219,7 +201,8 @@ at it — read the mail at http://localhost:8025 (with `pnpm dev`, set `SMTP_HOS
 - **Exam answer key is server-only.** It used to be in the page source. Per-question feedback is
   still shown (the UX is unchanged), but each answer is revealed by the server only after the
   learner commits to an option. Final grading is server-side as before.
-- **Certificate verification XSS fixed.** The page is rendered with React, which escapes the data.
+- **No public certificate verification.** The old public `/api/verify/<code>` page (which also had
+  an XSS bug) is gone — this is an internal LMS. Certificates keep their code as an internal ID.
 - **Admin roster** is one SQL query rather than three per user, and can be filtered per course.
 - **Data model is multi-course**: `courses`, `enrollments`, `module_progress`,
   `assessment_attempts`, `certificates` (versioned, optional expiry) and `audit_log`, all keyed by course.

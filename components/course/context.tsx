@@ -3,13 +3,8 @@
 import { createContext, useContext } from "react";
 
 /** Facts about the current course that content can reference without hard-coding them. */
-export const CourseInfo = createContext<{ totalMinutes: number; validityMonths: number | null }>({ totalMinutes: 0, validityMonths: null });
+export const CourseInfo = createContext<{ validityMonths: number | null }>({ validityMonths: null });
 
-/** Renders the course's total estimated time, e.g. "~60 minutes". */
-export function EstimatedTime() {
-  const { totalMinutes } = useContext(CourseInfo);
-  return <>~{Math.round(totalMinutes / 5) * 5} minutes</>;
-}
 
 /** "The certificate is valid for one year…" — from the course's admin setting. */
 export function CertificateValidityNote() {

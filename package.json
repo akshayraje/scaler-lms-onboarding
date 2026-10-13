@@ -2,7 +2,7 @@
   "name": "scaler-lms",
   "version": "0.1.0",
   "private": true,
-  "description": "Internal LMS & onboarding — Next.js + Postgres, self-hostable",
+  "description": "Internal LMS & onboarding \u2014 Next.js + Postgres, self-hostable",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,8 +10,7 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts",
-    "db:import-legacy": "tsx --env-file-if-exists=.env scripts/import-legacy.ts"
+    "db:migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

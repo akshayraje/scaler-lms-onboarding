@@ -39,8 +39,6 @@ export function CoursePlayer({ slug, initialCompleted, renewalDue, validityMonth
     [modules, completed],
   );
   const maxUnlocked = Math.max(...doneIdx, -1) + 1;
-  const totalMinutes = modules.reduce((a, m) => a + m.est, 0);
-  const minutesLeft = Math.max(totalMinutes - modules.reduce((a, m) => a + (completed.has(m.id) ? m.est : 0), 0), 1);
   const pct = (completed.size / modules.length) * 100;
 
   function markComplete(i: number) {
@@ -76,12 +74,12 @@ export function CoursePlayer({ slug, initialCompleted, renewalDue, validityMonth
       <span>
         Module {current + 1} of {modules.length}
       </span>
-      <span>~{minutesLeft} min remaining</span>
+      <span>{Math.round(pct)}% complete</span>
     </div>
   );
 
   return (
-    <CourseInfo.Provider value={{ totalMinutes, validityMonths }}>
+    <CourseInfo.Provider value={{ validityMonths }}>
     <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-[1180px] flex-col md:flex-row">
       {/* Desktop: the "corridor" rail, pinned under the 56px top nav */}
       <nav className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-[250px] shrink-0 overflow-y-auto bg-navy py-7 text-[#e7ecf9] md:block print:hidden">

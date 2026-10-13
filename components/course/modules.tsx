@@ -430,7 +430,7 @@ function Exam({ slug, mod, isFirst, passThreshold, onBack, onNext }: ViewProps &
         <Eyebrow center>Final Assessment — Official Score</Eyebrow>
         <div className="font-heading text-5xl text-primary sm:text-[52px]">{result.score}%</div>
         <p>
-          {result.correctCount} out of {result.total} correct · <span className="whitespace-nowrap">graded server-side</span>
+          {result.correctCount} out of {result.total} correct
         </p>
         <div className="mx-auto my-4 max-w-[420px] text-left">
           <Feedback correct={pass}>
@@ -581,11 +581,10 @@ function Certificate({ slug, onBack, onMarkComplete }: ViewProps) {
       </CourseCard>
     );
   }
-  const verifyUrl = `${window.location.origin}/verify/${t.certCode}`;
   return (
     <CourseCard>
       <div className="rounded-md border-[3px] border-double border-brand bg-linear-to-b from-white to-[#f3f6fd] px-4 py-8 text-center sm:px-10 sm:py-[50px]">
-        <Eyebrow center>Official Transcript &amp; Certificate</Eyebrow>
+        <Eyebrow center>Certificate</Eyebrow>
         <h1 className="mb-1 text-2xl sm:text-[32px]">{t.title}</h1>
         <p className="text-sm text-muted-foreground sm:text-base">{t.course}</p>
         <p className="mt-[22px]">This certifies that</p>
@@ -607,12 +606,6 @@ function Certificate({ slug, onBack, onMarkComplete }: ViewProps) {
               {new Date(t.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
             </>
           )}
-        </p>
-        <p className="font-mono text-[11px] break-all text-muted-foreground">
-          Verify at{" "}
-          <a href={verifyUrl} target="_blank" rel="noreferrer" className="underline">
-            {verifyUrl}
-          </a>
         </p>
       </div>
       <div className="mt-7 flex items-center justify-between gap-3 print:hidden">

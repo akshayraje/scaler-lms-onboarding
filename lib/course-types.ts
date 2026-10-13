@@ -28,7 +28,6 @@ export type CaseStudy = {
 type ModuleBase = {
   id: string;
   title: string;
-  est: number;
   /**
    * Quick check shown after a lesson's content: 2–3 questions on its main points.
    * Must be answered to finish the module, but isn't scored or recorded.

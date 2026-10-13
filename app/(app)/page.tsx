@@ -22,7 +22,6 @@ export default async function Dashboard() {
           // Count only modules that still exist (content can change after learners start).
           const done = c.modules.filter((m) => s.doneIds.includes(m.id)).length;
           const pct = Math.round((done / c.modules.length) * 100);
-          const minutes = c.modules.reduce((a, m) => a + m.est, 0);
           return (
             <Link
               key={c.slug}
@@ -38,7 +37,7 @@ export default async function Dashboard() {
                 <ProgressBar value={pct} />
                 <div className="mt-1.5 flex justify-between font-mono text-[11.5px] text-muted-foreground">
                   <span>{s.certified && s.validUntil ? `Valid till ${formatDate(s.validUntil)}` : `${pct}% complete`}</span>
-                  <span>~{minutes} min</span>
+                  <span>{c.modules.length} modules</span>
                 </div>
               </div>
             </Link>

@@ -1,4 +1,4 @@
-import { CertificateValidityNote, EstimatedTime } from "@/components/course/context";
+import { CertificateValidityNote } from "@/components/course/context";
 import { InfoTile, PlainList, ScenarioBox, TileGrid } from "@/components/course/kit";
 import { PolicyLink, ReportingContacts } from "@/components/course/org-blocks";
 import type { CourseDefinition } from "@/lib/course-types";
@@ -40,7 +40,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "welcome",
       title: "Welcome",
-      est: 2,
       type: "welcome",
       eyebrow: "Orientation",
       heading: "Welcome to Respect at Work",
@@ -53,14 +52,8 @@ export const poshPocso: CourseDefinition = {
             Offences). It&apos;s built around real workplace scenarios, not legal text.
           </p>
           <TileGrid className="mt-6">
-            <InfoTile
-              title={
-                <>
-                  ⏱ <EstimatedTime />
-                </>
-              }
-            >
-              Self-paced — pause and resume anytime. You can revisit any module before the final assessment.
+            <InfoTile title="⏱ Self-paced">
+              Pause and resume anytime. You can revisit any module before the final assessment.
             </InfoTile>
             <InfoTile title="🔒 Your privacy">
               Your individual answers aren&apos;t shared with your manager. HR sees completion status and scores to keep
@@ -77,7 +70,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "why-posh-matters",
       title: "Why POSH Matters",
-      est: 4,
       type: "info-reveal",
       intro: (
         <p>
@@ -107,7 +99,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "what-counts",
       title: "What Counts as Harassment",
-      est: 4,
       type: "content",
       eyebrow: "What Counts as Harassment",
       heading: "What Counts as Harassment",
@@ -153,7 +144,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "types-of-harassment",
       title: "Types of Harassment",
-      est: 4,
       type: "info-reveal",
       heading: "Types of Harassment",
       intro: <p>Harassment doesn&apos;t only look like physical contact. Tap each category to see real examples.</p>,
@@ -171,7 +161,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "whos-responsible",
       title: "Who's Responsible",
-      est: 3,
       type: "info-reveal",
       heading: "Who's Responsible",
       intro: <p>Preventing and addressing harassment is everyone&apos;s job — but each role carries a distinct duty.</p>,
@@ -188,7 +177,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "complaint-process",
       title: "Complaint & Inquiry Process",
-      est: 5,
       type: "timeline",
       heading: "How a Complaint Moves Through the IC",
       steps: [
@@ -229,7 +217,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "reporting-here",
       title: "Reporting at Our Company",
-      est: 3,
       type: "content",
       eyebrow: "Where to turn",
       heading: "Reporting at Our Company",
@@ -255,7 +242,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "case-uninvited-attention",
       title: "The Uninvited Attention",
-      est: 4,
       type: "case",
       caseStudy: {
         tag: "Case Study 1",
@@ -275,7 +261,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "digital-conduct",
       title: "Digital Workplace Conduct",
-      est: 4,
       type: "info-reveal",
       heading: "Digital Workplace Conduct",
       intro: <p>Group chats, emails, and calls are workplaces too. Tap each card to see how the law treats them.</p>,
@@ -293,7 +278,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "active-bystander",
       title: "Being an Active Bystander",
-      est: 4,
       type: "info-reveal",
       heading: "Being an Active Bystander",
       intro: (
@@ -317,7 +301,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "case-group-chat",
       title: "The Group Chat",
-      est: 4,
       type: "case",
       caseStudy: {
         tag: "Case Study 2",
@@ -338,7 +321,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "when-someone-confides",
       title: "When Someone Confides in You",
-      est: 4,
       type: "info-reveal",
       heading: "When Someone Confides in You",
       intro: (
@@ -363,7 +345,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "pocso",
       title: "POCSO: What Employees Should Know",
-      est: 5,
       type: "info-reveal",
       heading: "POCSO: What Employees Should Know",
       intro: (
@@ -388,7 +369,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "case-late-night-messages",
       title: "The Late-Night Messages",
-      est: 4,
       type: "case",
       caseStudy: {
         tag: "Case Study 3",
@@ -409,7 +389,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "dos-and-donts",
       title: "Do's and Don'ts",
-      est: 2,
       type: "checklist",
       heading: "Do's and Don'ts",
       dos: [
@@ -430,7 +409,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "final-assessment",
       title: "Final Assessment",
-      est: 10,
       type: "exam",
       questions: [
         { q: "Under the POSH Act, who can be an 'aggrieved woman'?", options: ["Only full-time permanent staff", "Only senior employees", "Only Indian citizens", "Any woman at the workplace, regardless of employment type or age"] },
@@ -458,7 +436,6 @@ export const poshPocso: CourseDefinition = {
     {
       id: "acknowledgement",
       title: "Policy Acknowledgement",
-      est: 1,
       type: "acknowledgement",
       heading: "Policy Acknowledgement",
       intro: (
@@ -475,6 +452,6 @@ export const poshPocso: CourseDefinition = {
       ],
       confirmLabel: "I acknowledge",
     },
-    { id: "certificate", title: "Your Certificate", est: 1, type: "certificate" },
+    { id: "certificate", title: "Your Certificate", type: "certificate" },
   ],
 };

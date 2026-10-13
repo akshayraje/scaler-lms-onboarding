@@ -1,0 +1,50 @@
+# Local end-to-end stack: Postgres + the production app image.
+#   cp .env.example .env   # fill in Google + secret
+#   docker compose up --build
+# For hot-reload dev instead: `docker compose up db` and `pnpm dev`.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: lms
+      POSTGRES_PASSWORD: lms
+      POSTGRES_DB: lms
+    ports:
+      - "${DB_HOST_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lms -d lms"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://lms:lms@db:5432/lms
+      # Local email goes to Mailpit unless overridden in .env
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-learning@localhost.test}
+      # e.g. `HRMS_PROVIDER=mock docker compose up` for sample new joiners
+      HRMS_PROVIDER: ${HRMS_PROVIDER:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Local SMTP catcher (the app's SMTP_* defaults point here). With `pnpm dev`,
+  # use SMTP_HOST=localhost SMTP_PORT=1025. Read the mail at http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  pgdata:

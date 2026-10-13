@@ -1,187 +1,240 @@
-# Scaler Respect@Work — Vercel deployment guide
+# Scaler Learning — internal LMS & onboarding
 
-This is the HTML training course, rebuilt to deploy on Vercel with real
-Google Workspace SSO and an admin completion dashboard. The course content
-itself (15 modules, both case studies, quizzes, final exam) is unchanged —
-what changed is how login, progress, and reporting work:
+Multi-course internal LMS with Google Workspace sign-in and Postgres-backed
+progress, assessments, certificates and an audit log. The first course is
+**Respect at Work** (POSH & POCSO awareness), ported from the original
+single-file Vercel app with its UI and content unchanged.
 
-| | Before (standalone) | Now (this version) |
-|---|---|---|
-| Login | Manual name/email form | Real Google Sign-In, domain-verified |
-| Progress storage | Browser-only (`window.storage`) | Postgres database, server-side |
-| Exam grading | Client-side JavaScript | Server-side (can't be faked) |
-| Admin view | None | Dashboard: completion stats, roster, audit log |
+Runs anywhere Docker + Postgres run (Railway, Render, Fly, a VPS). No Vercel or
+Neon dependencies.
 
-`/api/*` are **Vercel Functions** (serverless) — there's no server to run or
-manage. `public/index.html` is served as a static file.
+| Layer | Choice |
+|---|---|
+| App | Next.js 16 (App Router, server actions), TypeScript, `output: "standalone"` |
+| DB | Postgres 14+ via `pg` + Drizzle ORM; SQL migrations in `drizzle/` |
+| Auth | Auth.js v5 (`next-auth`), Google provider, Workspace domain lock, DB sessions |
+| UI | Tailwind CSS v4 + shadcn/ui (Radix); brand tokens in `app/globals.css`, fonts self-hosted via `next/font` |
 
 ---
 
-## Step 1 — Push this project to GitHub
+## Run it locally (end-to-end, in Docker)
 
-Vercel deploys from a Git repo. Create a new repo (GitHub, GitLab, or
-Bitbucket all work) and push this whole folder to it.
+1. **Google OAuth client** (one-time). In Google Cloud Console → APIs & Services → Credentials →
+   *Create OAuth client ID* → *Web application*:
+   - Authorized JavaScript origin: `http://localhost:3000`
+   - Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+   - OAuth consent screen → User type **Internal**.
+
+   > The original app used the Google One-Tap ID-token flow. This one uses the standard OAuth
+   > redirect flow, so it needs the **client secret** and the **redirect URI** above.
+
+2. **Env file**
+   ```bash
+   cp .env.example .env
+   ```
+   Fill in `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `COMPANY_DOMAIN`, your email in
+   `ADMIN_EMAILS`, and an `AUTH_SECRET`:
+   ```bash
+   openssl rand -hex 32
+   ```
+
+3. **Start the stack** (Postgres + the production image):
+   ```bash
+   docker compose up --build
+   ```
+   Open http://localhost:3000. On boot the app applies DB migrations and syncs the course
+   catalog automatically.
+
+### Hot-reload dev instead
 
 ```bash
-cd scaler-respect-at-work
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin <your-repo-url>
-git push -u origin main
+docker compose up -d db
+```
+```bash
+pnpm install && pnpm dev
 ```
 
----
+Compose publishes Postgres on host port **5433** (set `DB_HOST_PORT` to change it).
 
-## Step 2 — Decide which domain hosts this
+### Useful scripts
 
-You mentioned `scaler.com` as the main domain and `people.scaler.com` as a
-subdomain. Before going further, pick **one specific hostname** for this
-course — e.g. `respect.scaler.com` or `training.scaler.com` (I'd avoid
-reusing `people.scaler.com` if that's already your HRMS or another system —
-a dedicated subdomain keeps this cleanly separable). Whatever you choose,
-you'll need it for both Step 4 (Vercel domain) and Step 5 (Google OAuth), and
-it has to match exactly in both places or login will fail.
-
----
-
-## Step 3 — Import the project into Vercel
-
-1. [vercel.com/new](https://vercel.com/new) → **Import Git Repository** →
-   select the repo from Step 1.
-2. Framework preset: Vercel should auto-detect **Other** (no framework) —
-   that's correct, since this is plain HTML + serverless functions, no
-   build step needed.
-3. Don't deploy yet if you can help it — add the environment variables
-   (Step 6) and the Postgres database (Step 4) first, so the first deploy
-   already works end-to-end. If you've already deployed, that's fine too —
-   just redeploy after Steps 4–6.
-
----
-
-## Step 4 — Add a Postgres database
-
-1. In your Vercel project → **Storage** tab → **Create Database** →
-   **Postgres** (this is Neon-backed, managed by Vercel).
-2. **Connect** it to this project. Vercel automatically injects
-   `POSTGRES_URL` and related env vars — you don't set a connection string
-   by hand.
-3. The database schema (`users`, `progress`, `exam_attempts`, `certificates`,
-   `audit_log`) is created automatically on first API call — there's no
-   separate migration step to run.
-
----
-
-## Step 5 — Set up Google OAuth
-
-1. [Google Cloud Console](https://console.cloud.google.com/) → **APIs &
-   Services → Credentials → Create Credentials → OAuth client ID** →
-   Application type **Web application**.
-2. **Authorized JavaScript origins**: add
-   `https://<your-domain-from-step-2>` (e.g. `https://respect.scaler.com`),
-   plus `http://localhost:3000` if you'll test locally.
-3. Under **OAuth consent screen**, set **User type** to **Internal** if
-   this is inside your Google Workspace org — that restricts sign-in to
-   your organization at the Google level, on top of the domain check this
-   app also does server-side.
-4. Copy the generated **Client ID**.
-
----
-
-## Step 6 — Configure environment variables in Vercel
-
-Project → **Settings → Environment Variables**, add each of these
-(reference `.env.example` for the full list):
-
-| Variable | Value |
+| | |
 |---|---|
-| `GOOGLE_CLIENT_ID` | From Step 5 |
-| `COMPANY_DOMAIN` | `scaler.com` |
-| `ADMIN_EMAILS` | Comma-separated HR/L&D emails, e.g. `hr-admin@scaler.com` |
-| `SESSION_SECRET` | A long random string — generate with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
-| `COOKIE_SECURE` | `true` |
-
-`POSTGRES_URL` and friends are already set from Step 4 — don't add those
-manually.
+| `pnpm test` | Unit tests (grading) |
+| `pnpm lint` | Type-check |
+| `pnpm db:generate` | Generate a new SQL migration after editing `lib/db/schema.ts` |
+| `pnpm db:migrate` | Apply migrations + sync catalog (also runs automatically on server start) |
+| `pnpm db:import-legacy` | Import data from the old Vercel Postgres (see below) |
 
 ---
 
-## Step 7 — Point the frontend at your Google Client ID
+## Deploy on Railway
 
-One manual edit, because `public/index.html` is a static file (no build
-step to inject env vars into it): open it and find the `CONFIG` block near
-the top of the `<script>` tag, then set:
+1. New project → **Deploy from GitHub repo** (Railway picks up the `Dockerfile` via `railway.json`).
+2. Add a **PostgreSQL** service.
+3. On the app service → Variables:
+   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
+   - `AUTH_URL` = your public URL, e.g. `https://learn.scaler.com`
+   - `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `COMPANY_DOMAIN`, `ADMIN_EMAILS`
+4. Add the production redirect URI to the Google OAuth client:
+   `https://<your-domain>/api/auth/callback/google`
+5. Settings → Networking → custom domain (CNAME at your DNS).
 
-```js
-const CONFIG = {
-  GOOGLE_CLIENT_ID: "paste-the-same-client-id-from-step-5",
-  COMPANY_DOMAIN: "scaler.com",
-};
+Health check: `GET /api/health` (checks DB connectivity). Migrations run on boot under a
+Postgres advisory lock, so multiple replicas are safe.
+
+The same image runs unchanged on any other Docker host: give it a `DATABASE_URL` and the env vars above.
+
+---
+
+## Migrating data from the old Vercel deployment
+
+Users, module progress, exam attempts, certificates (same codes) and the audit log are imported
+into the new schema. Users are matched by email and linked to their Google account on first sign-in.
+
+```bash
+LEGACY_DATABASE_URL='postgres://…old vercel/neon url…' \
+DATABASE_URL='postgres://…new db…' \
+pnpm db:import-legacy
 ```
 
-These two values aren't secrets (a Client ID and a domain name are meant to
-be public), so hardcoding them here is fine — just make sure they match
-Step 5 and Step 6 exactly. Commit and push this change.
+The script is idempotent, so it is safe to re-run. Certificates printed by the old app link to
+`/api/verify/<code>`; that path still works and redirects to `/verify/<code>`.
 
 ---
 
-## Step 8 — Add your custom domain
+## Project layout
 
-Project → **Settings → Domains** → add the hostname from Step 2 (e.g.
-`respect.scaler.com`). Vercel will show you a DNS record (usually a CNAME)
-to add at whoever manages `scaler.com`'s DNS. Once it verifies, that domain
-serves this project over HTTPS automatically.
+```
+app/
+  login/                    Google sign-in (original login screen)
+  page.tsx                  Learner dashboard: "Your courses"
+  courses/[slug]/           Course player page + server actions (progress, exam, transcript)
+  admin/                    Roster & audit log, per course (admin role only)
+  verify/[code]/            Public certificate verification
+  api/auth/[...nextauth]/   Auth.js handler
+  api/health/               Health check
+components/course/          CoursePlayer (rail / mobile drawer), module renderers, kit.tsx building blocks
+components/ui/              shadcn/ui primitives (button, badge, table, sheet)
+content/courses/
+  index.ts                  Course registry
+  keys.server.ts            Exam answer keys registry (server-only)
+  posh-pocso/course.tsx     Course content
+  posh-pocso/exam.server.ts Answer key — never shipped to the browser
+lib/
+  auth.ts                   Auth.js config: domain lock, admin bootstrap, audit events
+  db/schema.ts              Drizzle schema (auth + LMS tables)
+  grading.ts                Pure exam grading (unit-tested)
+drizzle/                    Generated SQL migrations
+scripts/                    migrate, import-legacy
+```
+
+### Adding a course
+
+1. Create `content/courses/<slug>/course.tsx` exporting a `CourseDefinition` (see
+   `lib/course-types.ts`). For rich text inside modules, use the blocks in
+   `components/course/kit.tsx` (`ScenarioBox`, `PlainList`, `TileGrid`, `InfoTile`, …)
+   rather than raw class names. Module types available: `welcome`, `info-reveal`, `info-single`,
+   `quiz`, `case`, `timeline`, `checklist`, `mythfact`, `exam`, `certificate`.
+2. If it has an `exam` module, add `exam.server.ts` with the answer key and register it in
+   `content/courses/keys.server.ts`.
+3. Register the course in `content/courses/index.ts`. The catalog row is created on next boot.
+4. Bump `version` whenever the content or answers change materially; certificates record the version.
+
+### Company-specific details
+
+IC members, the complaint email/form, the POSH policy link, the appellate authority, the
+district Local Committee and counselling details live in **`content/org.ts`**. Until filled in,
+they render as clearly marked "to be added by HR" placeholders in the course.
+
+### Certification rules
+
+A certificate is issued when the learner has **passed the final assessment** and **ticked the
+policy acknowledgement** (the exact statements are stored with a timestamp and IP as audit
+evidence). Certificates expire after `validityMonths` (12 for Respect at Work); the learner is
+then sent back to the assessment and acknowledgement to renew. Exam options are shuffled per
+attempt, correct answers are only shown after a pass, and `content/courses/courses.test.ts`
+fails the build if an answer key would let a single-letter strategy pass.
+
+### Background jobs & notifications
+
+Scheduled jobs run on **pg-boss** (queue + cron stored in Postgres, schema `pgboss`), started by
+`instrumentation.ts` in every app instance — pg-boss makes sure each cron tick runs once, and each
+job also takes a Postgres advisory lock, so several replicas are safe. Set `JOBS_RUNNER=off` on
+instances that shouldn't run jobs.
+
+| Job | Schedule (APP_TIMEZONE) | What it does |
+|---|---|---|
+| HRMS employee sync | daily 02:00 | Pulls the Darwinbox employee master; marks leavers inactive; assigns each course to the employees its **coverage rules** match (creating accounts as needed) |
+| Training nudges | weekdays 10:30 | Nudges (via every configured provider — email, Slack) per each course's **nudge schedule**: after assignment until completed, and around certificate expiry |
+
+All credentials are **environment variables** (see `.env.example`): `SLACK_BOT_TOKEN`, `SMTP_*`
+and `DARWINBOX_*` (or `HRMS_PROVIDER=mock`). A channel is active when its variables are set.
+**Admin → Settings** holds only the notification mode and templates, plus provider/HRMS status and
+"send test" buttons. The Darwinbox field mapping is `DARWINBOX_FIELDS` in `lib/automation/hrms.ts`. Notifications
+start in **Dry run**: messages are generated and logged under **Admin → Automation** but not sent.
+Only the latest due step is sent per person, and each step is sent at most once (per mode), so
+switching to Live never releases a backlog. Jobs can be triggered with **Run now**.
+
+**Per-course settings** (Admin → Courses, table `course_settings`):
+*coverage* — rules that must **all** match (AND): joining date (joined in the last N days; future
+joiners excluded), department is any of …, designation is any of … (picked from the employee master
+in a searchable multi-select; OR within a rule, case-insensitive; each kind of rule at most once), plus "due in N days"; the *nudge schedule* — add/remove steps
+(day offset + CC manager) after assignment and around certificate expiry; and *certificate validity*
+in months (or never expires; applies to newly issued certificates). A course's
+`defaults` in code seed its row the first time it's registered; after that the database is the
+source of truth. Respect at Work was seeded with: new joiners within 30 days, due in 14, valid 12 months,
+nudges on day 0/4/9/14+mgr/21+mgr and expiry −7/0/7/14+mgr/21+mgr.
+
+**Notifications are provider-agnostic** (`lib/notifications/`): a nudge is rendered once from its
+template and delivered through every configured provider — email and Slack today. At escalation
+steps the manager is CC'd; providers without CC support (Slack) deliver to the learner only.
+
+**Message templates** (Admin → Settings → Notification templates): three Markdown templates —
+*Course assigned*, *Reminder* and *Certificate renewal* — each with a subject and button label.
+The same Markdown is rendered to HTML for email and to Slack mrkdwn (`lib/notifications/templates.ts`),
+with fields like `{{first_name}}`, `{{department}}`, `{{due_status}}` filled per person (unknown
+fields can't be saved). Edits are stored as overrides of the defaults in code and can be reset.
+
+Links in nudges go straight to the course; if the person isn't signed in, they're sent through
+Google sign-in and back (`/login?callbackUrl=…`).
+
+**Local testing:** `docker compose up` also starts **Mailpit**, and the app's SMTP defaults point
+at it — read the mail at http://localhost:8025 (with `pnpm dev`, set `SMTP_HOST=localhost`,
+`SMTP_PORT=1025`, `SMTP_FROM_EMAIL=…`). Set
+`HRMS_PROVIDER=mock` to get a few sample new joiners.
+
+**Slack app:** create an app at api.slack.com → OAuth & Permissions → bot scopes `chat:write`,
+`users:read`, `users:read.email` → install to workspace → set the `xoxb-` token as `SLACK_BOT_TOKEN`.
+
+### Roles
+
+`user.role` is `learner` | `manager` | `admin`. Emails in `ADMIN_EMAILS` are promoted to
+`admin` on sign-in; anyone else can be promoted with SQL until an admin UI lands.
 
 ---
 
-## Step 9 — Deploy and test
+## Changes from the original app
 
-1. Push to `main` (or redeploy from the Vercel dashboard) — this triggers a
-   production deployment.
-2. Visit your domain. Sign in with a real `@scaler.com` Google account and
-   walk the whole course: login → a few modules → close the tab → come
-   back → confirm it resumed → finish all modules → fail the exam once on
-   purpose → retake → pass → certificate appears with a verification link.
-3. Try signing in with a personal `@gmail.com` account — it should be
-   rejected (tests the domain restriction in `api/auth/google.js`).
-4. Add your own email to `ADMIN_EMAILS`, reload, and confirm the "Admin
-   dashboard" button appears in the top bar.
+- **Exam answer key is server-only.** It used to be in the page source. Per-question feedback is
+  still shown (the UX is unchanged), but each answer is revealed by the server only after the
+  learner commits to an option. Final grading is server-side as before.
+- **Certificate verification XSS fixed.** The page is rendered with React, which escapes the data.
+- **Admin roster** is one SQL query rather than three per user, and can be filtered per course.
+- **Data model is multi-course**: `courses`, `enrollments`, `module_progress`,
+  `assessment_attempts`, `certificates` (versioned, optional expiry) and `audit_log`, all keyed by course.
 
----
+### Styling
 
-## Step 10 — Using the admin dashboard
+Tailwind utilities everywhere; there is no custom CSS beyond the design tokens in
+`app/globals.css` (brand colours mapped onto shadcn's semantic tokens, plus `navy`, `brand`,
+`success`, `danger`…). Add shadcn components with `pnpm dlx shadcn@latest add <name>`.
+Layouts are mobile-first: on phones, the course corridor collapses into a drawer.
 
-Once signed in as an admin email, the top-bar button opens:
+## Roadmap
 
-- **Roster tab** — every employee who's signed in, with % of modules
-  complete, latest exam score, certified/in-progress/not-started status,
-  and last sign-in time. Summary cards at the top give you the headline
-  numbers: total employees, completed & certified, in progress, not
-  started — this is the "who's done, who isn't" report you asked for.
-- **Audit log tab** — every login, denied login, module completion, exam
-  submission, and certificate issuance, newest first, with timestamp and
-  IP.
-
-Both are served from `/api/admin/roster` and `/api/admin/audit-log`, which
-check `ADMIN_EMAILS` server-side — a non-admin hitting those URLs directly
-gets a 403, not data.
-
----
-
-## A few honest things to know
-
-- **I built and syntax-validated every file in this project**, and
-  independently re-tested the exam grading logic (pass/fail/malformed
-  input) — but I don't have a live Vercel account or a real Postgres
-  instance to deploy against from here, so I haven't watched this run
-  end-to-end myself. Budget time for Step 9's test pass before telling
-  employees it's live.
-- **Vercel Functions have a default execution timeout** (10s on Hobby, 60s
-  on Pro as of writing) — nothing in this app should come close to that,
-  but if you ever add heavier admin reports, keep it in mind.
-- **Vercel Postgres (Neon) has its own free-tier storage/row limits** —
-  fine for a single company's employee base, but check current limits on
-  Vercel's pricing page if your org is very large.
-- Same legal caveat as always: have HR/legal review the IC timelines and
-  POCSO reporting steps in the course content against your actual internal
-  policy before go-live.
+1. ~~Scaffold: Next.js + Postgres + Auth.js + Docker~~
+2. ~~Port POSH course~~
+3. Learner dashboard polish, admin filters, CSV export
+4. Assignments: rules (dept/role), due dates, manager view, reminder emails
+5. Onboarding journeys (courses + tasks + acknowledgements, relative to joining date)

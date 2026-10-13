@@ -7,7 +7,7 @@ import { courseUrl } from "@/lib/urls";
 import { COURSES } from "@/content/courses";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Settings · Admin" };
+export const metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const [notifications, templates] = await Promise.all([getSettings("notifications"), getTemplates()]);

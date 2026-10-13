@@ -5,7 +5,7 @@ import { describeRule, describeStep } from "@/lib/course-settings";
 import { getAllCourseSettings } from "@/lib/course-settings-store";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Courses · Admin" };
+export const metadata = { title: "Courses" };
 
 export default async function CoursesAdminPage() {
   const all = await getAllCourseSettings();

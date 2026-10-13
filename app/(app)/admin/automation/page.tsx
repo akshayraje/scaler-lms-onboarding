@@ -12,7 +12,7 @@ import { getSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Automation · Admin" };
+export const metadata = { title: "Automation" };
 
 const headCls = "font-mono text-[11px] tracking-[0.06em] text-muted-foreground uppercase";
 const card = "mb-6 rounded-xl border bg-card px-4 py-6 sm:px-8 sm:py-7";

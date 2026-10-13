@@ -271,7 +271,7 @@ export function emailDocument(bodyHtml: string, cta: string, url: string) {
 <tr><td style="padding:28px 28px 8px">${bodyHtml}
 <a href="${escapeHtml(url)}" style="display:inline-block;background:#4c86ff;color:#ffffff;font-weight:600;text-decoration:none;padding:12px 22px;border-radius:8px">${escapeHtml(cta)}</a>
 <p style="margin:20px 0 0;font-size:12px;color:#5b6473">Or open: <a href="${escapeHtml(url)}" style="color:#0043c9">${escapeHtml(url)}</a></p></td></tr>
-<tr><td style="padding:16px 28px 24px;font-size:11px;color:#8890a0">Sent by Scaler Learning — internal training notifications.</td></tr>
+<tr><td style="padding:16px 28px 24px;font-size:11px;color:#8890a0">Sent by Scaler Onboarding — internal training notifications.</td></tr>
 </table></td></tr></table></body></html>`;
 }
 

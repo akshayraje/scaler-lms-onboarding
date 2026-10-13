@@ -9,7 +9,7 @@ import { requireAdmin } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Admin dashboard" };
+export const metadata = { title: "Reports" };
 
 type Search = { tab?: string; course?: string };
 

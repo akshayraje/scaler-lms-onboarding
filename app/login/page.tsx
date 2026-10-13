@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/session";
 import { GoogleSignInButton } from "./GoogleSignInButton";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Sign in · Scaler" };
+export const metadata = { title: "Sign in" };
 
 // Auth.js error codes (?error=...) → messages.
 const ERRORS: Record<string, string> = {

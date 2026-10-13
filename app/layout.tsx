@@ -8,7 +8,8 @@ const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], 
 const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-plex-mono" });
 
 export const metadata: Metadata = {
-  title: "Scaler",
+  // Pages set only their own part; it's rendered as "<page> - Scaler Onboarding".
+  title: { default: "Scaler Onboarding", template: "%s - Scaler Onboarding" },
   description: "Scaler employee portal",
 };
 

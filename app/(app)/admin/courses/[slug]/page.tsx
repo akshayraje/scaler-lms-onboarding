@@ -24,7 +24,7 @@ async function employeeFieldOptions() {
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  return { title: `${getCourse((await params).slug)?.title ?? "Course"} · Admin` };
+  return { title: getCourse((await params).slug)?.title ?? "Course" };
 }
 
 export default async function CourseSettingsPage({ params }: { params: Promise<{ slug: string }> }) {

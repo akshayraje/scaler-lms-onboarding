@@ -7,7 +7,10 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+# No BuildKit cache mount: Railway rejects cache ids without its service-id prefix,
+# and a hard-coded id would tie the image to one host. This layer is still cached
+# whenever package.json / pnpm-lock.yaml are unchanged.
+RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules

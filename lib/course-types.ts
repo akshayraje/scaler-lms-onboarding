@@ -21,9 +21,16 @@ export type CaseStudy = {
   tag: string;
   title: string;
   scenario: ReactNode[];
+  /**
+   * Optional comic-strip version of the scenario: panels in reading order (files in /public),
+   * three to a row on desktop and one per row on phones. When set it replaces the scenario text on screen.
+   */
+  comic?: ComicPanel[];
   decisions: PracticeQuestion[];
   wrapup: ReactNode;
 };
+
+export type ComicPanel = { src: string; width: number; height: number; alt: string };
 
 type ModuleBase = {
   id: string;

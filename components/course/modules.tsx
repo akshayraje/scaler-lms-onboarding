@@ -276,10 +276,34 @@ function Case({ mod, isFirst, onBack, onNext }: ViewProps & { mod: Of<"case"> })
       <CourseCard>
         <Pill>{c.tag}</Pill>
         <h1>{c.title}</h1>
-        {c.scenario.map((p, i) => (
-          <ScenarioBox key={i}>{p}</ScenarioBox>
-        ))}
-        <p className="text-muted-foreground">Read the scenario, then work through what you&apos;d do next.</p>
+        {c.comic ? (
+          // Rows of three on desktop; each panel's flex-grow is its aspect ratio, so a row's panels share one height.
+          // The last panel carries the "read the scenario…" prompt.
+          <div className="mb-6 grid gap-3">
+            {Array.from({ length: Math.ceil(c.comic.length / 3) }, (_, r) => (
+              <div key={r} className="grid gap-3 md:flex">
+                {c.comic!.slice(r * 3, r * 3 + 3).map((p) => (
+                  <img
+                    key={p.src}
+                    src={p.src}
+                    width={p.width}
+                    height={p.height}
+                    alt={p.alt}
+                    style={{ flex: `${p.width / p.height} 1 0%` }}
+                    className="h-auto w-full min-w-0 rounded-md border"
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            {c.scenario.map((p, i) => (
+              <ScenarioBox key={i}>{p}</ScenarioBox>
+            ))}
+            <p className="text-muted-foreground">Read the scenario, then work through what you&apos;d do next.</p>
+          </>
+        )}
         <NavButtons isFirst={isFirst} onBack={onBack} label="Start the decisions" onNext={() => setIdx(0)} />
       </CourseCard>
     );

@@ -1,8 +1,8 @@
 import "server-only";
-import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, like, sql } from "drizzle-orm";
 import { getCourse } from "@/content/courses";
 import { db } from "@/lib/db";
-import { certificates, employees, enrollments, user } from "@/lib/db/schema";
+import { certificates, employees, enrollments, notifications, user } from "@/lib/db/schema";
 import { getSettings, type NotificationMode } from "@/lib/settings";
 import { getTemplates } from "@/lib/notifications/store";
 import { dueStep } from "@/lib/course-settings";
@@ -12,13 +12,16 @@ import { notify, type NotifyTally } from "@/lib/notifications/notify";
 import { availableProviders } from "@/lib/notifications/providers";
 import type { FieldValues } from "@/lib/notifications/templates";
 
-export type Campaign = "new_joiner" | "renewal";
+export type Campaign = "new_joiner" | "renewal" | "in_progress";
 
 // Nudge schedules are per course (Admin → Courses), in days from an anchor:
 //  - new_joiner: anchor = date the course was assigned by the HRMS sync
 //  - renewal:    anchor = certificate expiry (negative = before expiry)
 // Only the latest due step is ever sent, so a missed day or switching from
 // dry-run to live never fires a backlog.
+// Plus in_progress: a recurring nudge (once per run) for anyone with the course in
+// progress, until completed or the course's max is reached — never on the same run
+// as a scheduled step for the same person and course.
 
 const DAY = 864e5;
 const startOfDay = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
@@ -121,10 +124,102 @@ async function renewalCandidates(): Promise<Candidate[]> {
     }));
 }
 
+async function inProgressCandidates(): Promise<(Candidate & { lastActivity: Date; dueOn: string | null })[]> {
+  const rows = await db
+    .select({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      courseId: enrollments.courseId,
+      startedAt: enrollments.startedAt,
+      dueOn: enrollments.dueOn,
+      lastProgress: sql<Date | null>`(select max(mp.completed_at) from module_progress mp
+        where mp.user_id = ${enrollments.userId} and mp.course_id = ${enrollments.courseId})`,
+      managerEmail: employees.managerEmail,
+      employeeCode: employees.employeeCode,
+      dateOfJoining: employees.dateOfJoining,
+      department: employees.department,
+      designation: employees.designation,
+      employeeStatus: employees.status,
+    })
+    .from(enrollments)
+    .innerJoin(user, eq(user.id, enrollments.userId))
+    .leftJoin(employees, eq(employees.userId, user.id))
+    .where(
+      and(
+        eq(enrollments.status, "in_progress"),
+        sql`not exists (select 1 from ${certificates} c where c.user_id = ${user.id} and c.course_id = ${enrollments.courseId}
+              and (c.expires_at is null or c.expires_at > now()))`,
+      ),
+    );
+  return rows
+    .filter((r) => r.employeeStatus !== "inactive" && r.startedAt)
+    .map((r) => ({
+      campaign: "in_progress" as const,
+      userId: r.userId,
+      email: r.email,
+      name: r.name ?? r.email,
+      courseId: r.courseId,
+      cycle: r.startedAt!.toISOString().slice(0, 10),
+      anchor: r.startedAt!,
+      // Self-started enrollments without a due date fall back to start + "due in N days" (filled in later).
+      date: r.dueOn ? new Date(r.dueOn) : r.startedAt!,
+      dueOn: r.dueOn,
+      lastActivity: r.lastProgress && new Date(r.lastProgress) > r.startedAt! ? new Date(r.lastProgress) : r.startedAt!,
+      managerEmail: r.managerEmail,
+      employee: { code: r.employeeCode, dateOfJoining: r.dateOfJoining, department: r.department, designation: r.designation },
+    }));
+}
+
+/** Calendar date (YYYY-MM-DD) in the app timezone — one in-progress nudge per day. */
+const todayKey = () => new Date().toLocaleDateString("en-CA", { timeZone: process.env.APP_TIMEZONE ?? "Asia/Kolkata" });
+
+/** Days already used by in-progress nudges, per course:user:cycle, in this mode. */
+async function inProgressHistory(mode: NotificationMode) {
+  const rows = await db
+    .select({ key: notifications.dedupeKey })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.campaign, "in_progress"),
+        inArray(notifications.status, ["sent", "dry_run"]),
+        like(notifications.dedupeKey, `${mode}:in_progress:%`),
+      ),
+    );
+  const days = new Map<string, Set<string>>();
+  for (const { key } of rows) {
+    // ${mode}:in_progress:${course}:${user}:${cycle}:${day}:${provider}
+    const [, , course, userId, cycle, day] = key.split(":");
+    const k = `${course}:${userId}:${cycle}`;
+    if (!days.has(k)) days.set(k, new Set());
+    days.get(k)!.add(day);
+  }
+  return days;
+}
+
+/** user:course pairs that received a scheduled (new joiner / renewal) nudge today, in this mode. */
+async function scheduledNudgesToday(mode: NotificationMode) {
+  const tz = process.env.APP_TIMEZONE ?? "Asia/Kolkata";
+  const rows = await db
+    .selectDistinct({ userId: notifications.userId, courseId: notifications.courseId })
+    .from(notifications)
+    .where(
+      and(
+        inArray(notifications.campaign, ["new_joiner", "renewal"]),
+        inArray(notifications.status, ["sent", "dry_run"]),
+        like(notifications.dedupeKey, `${mode}:%`),
+        sql`(${notifications.createdAt} at time zone ${tz})::date = (now() at time zone ${tz})::date`,
+      ),
+    );
+  return rows.map((r) => `${r.userId}:${r.courseId}`);
+}
+
 export type DispatchSummary = NotifyTally & {
   mode: NotificationMode;
   candidates: number;
   due: number;
+  /** In-progress nudges due this run (subset of `due`). */
+  inProgressDue: number;
   providers: string[];
 };
 
@@ -137,13 +232,16 @@ export type DispatchSummary = NotifyTally & {
 export async function dispatchNudges(opts: { jobRunId?: number } = {}): Promise<DispatchSummary> {
   const { mode } = await getSettings("notifications");
   const providers = availableProviders();
-  const summary: DispatchSummary = { mode, candidates: 0, due: 0, sent: 0, dryRun: 0, failed: 0, alreadySent: 0, providers: providers.map((p) => p.id) };
+  const summary: DispatchSummary = { mode, candidates: 0, due: 0, inProgressDue: 0, sent: 0, dryRun: 0, failed: 0, alreadySent: 0, providers: providers.map((p) => p.id) };
   if (mode === "off") return summary;
 
   const candidates = [...(await newJoinerCandidates()), ...(await renewalCandidates())];
   summary.candidates = candidates.length;
   const templates = await getTemplates();
   const schedules = await getAllCourseSettings();
+
+  // Person+course pairs that got a scheduled nudge today (no in-progress nudge on top).
+  const nudgedThisRun = new Set<string>();
 
   for (const c of candidates) {
     const steps = schedules.get(c.courseId)?.nudges[c.campaign === "renewal" ? "renewal" : "assignment"] ?? [];
@@ -154,7 +252,7 @@ export async function dispatchNudges(opts: { jobRunId?: number } = {}): Promise<
     if (!course) continue;
     const url = courseUrl(course.slug);
     const escalate = steps[step].ccManager && !!c.managerEmail;
-    await notify(
+    const outcomes = await notify(
       {
         dedupeKey: [c.campaign, c.courseId, c.userId, c.cycle, step].join(":"),
         to: c.email,
@@ -163,6 +261,42 @@ export async function dispatchNudges(opts: { jobRunId?: number } = {}): Promise<
         values: fieldValues(c, course.title, url),
         url,
         meta: { userId: c.userId, courseId: c.courseId, campaign: c.campaign, step, jobRunId: opts.jobRunId },
+      },
+      mode,
+      summary,
+      providers,
+    );
+    if (outcomes.some((o) => o.status !== "already_sent")) nudgedThisRun.add(`${c.userId}:${c.courseId}`);
+  }
+
+  // Recurring nudge for anyone with a course in progress — but never on a day they
+  // already got a scheduled nudge for that course (this run or an earlier run today).
+  for (const k of await scheduledNudgesToday(mode)) nudgedThisRun.add(k);
+  const inProgress = await inProgressCandidates();
+  summary.candidates += inProgress.length;
+  const history = await inProgressHistory(mode);
+  const today = todayKey();
+  for (const c of inProgress) {
+    const cfg = schedules.get(c.courseId)?.nudges.inProgress;
+    const course = getCourse(c.courseId);
+    if (!cfg?.enabled || !course || nudgedThisRun.has(`${c.userId}:${c.courseId}`)) continue;
+    const days = history.get(`${c.courseId}:${c.userId}:${c.cycle}`) ?? new Set<string>();
+    if (days.size >= cfg.maxReminders && !days.has(today)) continue;
+    if (cfg.inactiveDays > 0 && Math.floor((startOfDay(new Date()) - startOfDay(c.lastActivity)) / DAY) < cfg.inactiveDays) continue;
+    summary.due++;
+    summary.inProgressDue++;
+    const dueInDays = schedules.get(c.courseId)!.coverage.dueInDays;
+    const due = c.dueOn ? c : { ...c, date: new Date(c.anchor.getTime() + dueInDays * DAY) };
+    const url = courseUrl(course.slug);
+    await notify(
+      {
+        // One per day; the step is the reminder's number in this enrollment's cycle.
+        dedupeKey: [c.campaign, c.courseId, c.userId, c.cycle, today].join(":"),
+        to: c.email,
+        template: templates.reminder.template,
+        values: fieldValues(due, course.title, url),
+        url,
+        meta: { userId: c.userId, courseId: c.courseId, campaign: "in_progress", step: days.has(today) ? days.size - 1 : days.size, jobRunId: opts.jobRunId },
       },
       mode,
       summary,
@@ -192,7 +326,7 @@ export function fieldValues(c: Candidate, courseTitle: string, url: string): Fie
     course_title: courseTitle,
     course_link: url,
   };
-  if (c.campaign === "new_joiner") {
+  if (c.campaign === "new_joiner" || c.campaign === "in_progress") {
     base.due_date = fmtDate(c.date);
     base.due_status = d > 0 ? `due in ${plural(d, "day")}` : d === 0 ? "due today" : `overdue by ${plural(-d, "day")}`;
   } else {

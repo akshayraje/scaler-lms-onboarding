@@ -157,6 +157,8 @@ export function CourseSettingsEditor({ courseId, initial, fieldOptions }: { cour
   const { errors } = validateCourseSettings(s);
   const cov = s.coverage;
   const setCov = (patch: Partial<CourseSettings["coverage"]>) => setS({ ...s, coverage: { ...cov, ...patch } });
+  const setIP = (patch: Partial<CourseSettings["nudges"]["inProgress"]>) =>
+    setS({ ...s, nudges: { ...s.nudges, inProgress: { ...s.nudges.inProgress, ...patch } } });
 
   function save() {
     start(async () => {
@@ -285,6 +287,50 @@ export function CourseSettingsEditor({ courseId, initial, fieldOptions }: { cour
               <StepsEditor kind="renewal" steps={s.nudges.renewal} onChange={(renewal) => setS({ ...s, nudges: { ...s.nudges, renewal } })} />
             </div>
           )}
+          <div className="grid gap-2">
+            <Label className="text-[13px]">In-progress course nudges (uses the Reminder template)</Label>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <label className="flex items-center gap-2.5 font-medium">
+                <input
+                  type="checkbox"
+                  checked={s.nudges.inProgress.enabled}
+                  onChange={(e) => setIP({ enabled: e.target.checked })}
+                  className="size-4 accent-primary"
+                />
+                Nudge people who started but haven&apos;t finished
+              </label>
+              {s.nudges.inProgress.enabled && (
+                <label className="flex items-center gap-2">
+                  max
+                  <NumberField
+                    label="Maximum in-progress nudges"
+                    value={s.nudges.inProgress.maxReminders}
+                    min={1}
+                    max={30}
+                    onChange={(maxReminders) => setIP({ maxReminders })}
+                  />
+                  nudges
+                </label>
+              )}
+              {s.nudges.inProgress.enabled && (
+                <label className="flex items-center gap-2">
+                  after
+                  <NumberField
+                    label="Days without progress"
+                    value={s.nudges.inProgress.inactiveDays}
+                    min={0}
+                    max={30}
+                    onChange={(inactiveDays) => setIP({ inactiveDays })}
+                  />
+                  day(s) without progress
+                </label>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Sent with each weekday nudge run until the course is completed or the maximum is reached. Skipped while the person is still
+              making progress (0 = no activity check), and on days they already got a scheduled nudge above.
+            </p>
+          </div>
         </div>
       </Card>
 

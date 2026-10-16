@@ -1,22 +1,31 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { COURSES, getCourse } from "@/content/courses";
-import type { CourseSettings } from "./course-settings";
+import { DEFAULT_IN_PROGRESS, type CourseSettings } from "./course-settings";
 import { db } from "./db";
 import { courseSettings } from "./db/schema";
 
 /** Used for a course with no code defaults: nothing automatic until an admin configures it. */
 const EMPTY: CourseSettings = {
   coverage: { enabled: false, rules: [], dueInDays: 14 },
-  nudges: { assignment: [], renewal: [] },
+  nudges: { assignment: [], renewal: [], inProgress: DEFAULT_IN_PROGRESS },
   certificate: { validityMonths: null },
 };
 
 const defaultsFor = (courseId: string) => getCourse(courseId)?.defaults ?? EMPTY;
 
+/** Rows saved before the in-progress nudge existed fall back to the course's code default for it. */
+function withInProgress(n: Partial<CourseSettings["nudges"]>, courseId: string): CourseSettings["nudges"] {
+  return {
+    assignment: n.assignment ?? [],
+    renewal: n.renewal ?? [],
+    inProgress: { ...DEFAULT_IN_PROGRESS, ...defaultsFor(courseId).nudges.inProgress, ...(n.inProgress ?? {}) },
+  };
+}
+
 function fromRow(r: typeof courseSettings.$inferSelect): CourseSettings {
   return {
     coverage: r.coverage as CourseSettings["coverage"],
-    nudges: r.nudges as CourseSettings["nudges"],
+    nudges: withInProgress(r.nudges as Partial<CourseSettings["nudges"]>, r.courseId),
     certificate: (r.certificate as CourseSettings["certificate"] | null) ?? defaultsFor(r.courseId).certificate,
   };
 }

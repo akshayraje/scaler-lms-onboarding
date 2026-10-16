@@ -38,7 +38,7 @@ export default async function CoursesAdminPage() {
                 </Link>
               </div>
             </div>
-            <dl className="grid gap-4 text-sm md:grid-cols-3">
+            <dl className="grid gap-4 text-sm md:grid-cols-2 lg:grid-cols-4">
               <div>
                 <dt className="mb-1 font-mono text-[11px] tracking-[0.08em] text-muted-foreground uppercase">Coverage</dt>
                 <dd>
@@ -71,6 +71,14 @@ export default async function CoursesAdminPage() {
                   </dd>
                 </div>
               )}
+              <div>
+                <dt className="mb-1 font-mono text-[11px] tracking-[0.08em] text-muted-foreground uppercase">In-progress course nudges</dt>
+                <dd className="text-muted-foreground">
+                  {s.nudges.inProgress.enabled
+                    ? `On · max ${s.nudges.inProgress.maxReminders}${s.nudges.inProgress.inactiveDays ? ` · after ${s.nudges.inProgress.inactiveDays} day(s) without progress` : ""}`
+                    : "Off"}
+                </dd>
+              </div>
             </dl>
           </section>
         );

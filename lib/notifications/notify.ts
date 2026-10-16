@@ -19,7 +19,7 @@ export type NotifyRequest = {
   values: FieldValues;
   url: string;
   /** For the notification log. */
-  meta: { userId: string; courseId: string; campaign: "new_joiner" | "renewal" | "test"; step: number; jobRunId?: number };
+  meta: { userId: string; courseId: string; campaign: "new_joiner" | "renewal" | "in_progress" | "test"; step: number; jobRunId?: number };
 };
 
 export type NotifyTally = { sent: number; dryRun: number; failed: number; alreadySent: number };

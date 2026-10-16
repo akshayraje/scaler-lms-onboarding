@@ -56,6 +56,13 @@ describe("validateCourseSettings", () => {
     expect(validateCourseSettings({ ...ok, certificate: { validityMonths: 24 } }).value!.certificate.validityMonths).toBe(24);
     expect(validateCourseSettings({ ...ok, certificate: { validityMonths: 0 } }).errors[0]).toMatch(/validity/);
   });
+  it("validates the in-progress nudge, defaulting it when missing", () => {
+    expect(validateCourseSettings(ok).value!.nudges.inProgress).toEqual({ enabled: false, maxReminders: 5, inactiveDays: 1 });
+    const on = { ...ok, nudges: { ...ok.nudges, inProgress: { enabled: true, maxReminders: 3, inactiveDays: 0 } } };
+    expect(validateCourseSettings(on).value!.nudges.inProgress).toEqual({ enabled: true, maxReminders: 3, inactiveDays: 0 });
+    expect(validateCourseSettings({ ...on, nudges: { ...on.nudges, inProgress: { enabled: true, maxReminders: 0, inactiveDays: 0 } } }).errors[0]).toMatch(/max must be/);
+    expect(validateCourseSettings({ ...on, nudges: { ...on.nudges, inProgress: { enabled: true, maxReminders: 3, inactiveDays: -1 } } }).errors[0]).toMatch(/without progress/);
+  });
   it("course code defaults are valid", () => {
     for (const c of COURSES) if (c.defaults) expect(validateCourseSettings(c.defaults).errors).toEqual([]);
   });

@@ -34,6 +34,8 @@ export const poshPocso: CourseDefinition = {
         { day: 14, ccManager: true },
         { day: 21, ccManager: true },
       ],
+      // Daily (each nudge run) "please finish" reminder for anyone in progress, up to 5 times.
+      inProgress: { enabled: true, maxReminders: 5, inactiveDays: 1 },
     },
   },
   modules: [

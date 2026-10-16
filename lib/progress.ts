@@ -1,5 +1,6 @@
 import "server-only";
 import { and, eq, sql } from "drizzle-orm";
+import { getCourseSettings } from "./course-settings-store";
 import { db } from "./db";
 import { enrollments, moduleProgress } from "./db/schema";
 
@@ -11,16 +12,22 @@ export async function getCompletedModules(userId: string, courseId: string): Pro
   return rows.map((r) => r.moduleId);
 }
 
-/** Create the enrollment on first activity and move it to in_progress. */
+/**
+ * Create the enrollment on first activity and move it to in_progress. Self-started
+ * courses get a soft due date: start date + the course's "due in N days".
+ */
 export async function touchEnrollment(userId: string, courseId: string) {
+  const { dueInDays } = (await getCourseSettings(courseId)).coverage;
   await db
     .insert(enrollments)
-    .values({ userId, courseId, status: "in_progress", startedAt: new Date() })
+    .values({ userId, courseId, status: "in_progress", startedAt: new Date(), dueOn: sql`current_date + ${dueInDays}::int` })
     .onConflictDoUpdate({
       target: [enrollments.userId, enrollments.courseId],
       set: {
         status: sql`case when ${enrollments.status} = 'completed' then ${enrollments.status} else 'in_progress' end`,
         startedAt: sql`coalesce(${enrollments.startedAt}, now())`,
+        // Assigned courses keep their due date; older self-started ones get one now.
+        dueOn: sql`coalesce(${enrollments.dueOn}, coalesce(${enrollments.startedAt}, now())::date + ${dueInDays}::int)`,
       },
     });
 }

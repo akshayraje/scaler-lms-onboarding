@@ -148,7 +148,7 @@ instances that shouldn't run jobs.
 | Job | Schedule (APP_TIMEZONE) | What it does |
 |---|---|---|
 | HRMS employee sync | daily 02:00 | Pulls the Darwinbox employee master; marks leavers inactive; assigns each course to the employees its **coverage rules** match (creating accounts as needed) |
-| Training nudges | weekdays 10:30 | Nudges (via every configured provider — email, Slack) per each course's **nudge schedule**: after assignment until completed, and around certificate expiry |
+| Training nudges | weekdays 10:30 | Nudges (via every configured provider — email, Slack) per each course's **nudge schedule**: after assignment until completed, around certificate expiry, and a recurring **in-progress** reminder (each run, up to N times, only after N days without progress, never on a day with a scheduled nudge) |
 
 All credentials are **environment variables** (see `.env.example`): `SLACK_BOT_TOKEN`, `SMTP_*`
 and `DARWINBOX_*` (or `HRMS_PROVIDER=mock`). A channel is active when its variables are set.
@@ -162,7 +162,8 @@ switching to Live never releases a backlog. Jobs can be triggered with **Run now
 *coverage* — rules that must **all** match (AND): joining date (joined in the last N days; future
 joiners excluded), department is any of …, designation is any of … (picked from the employee master
 in a searchable multi-select; OR within a rule, case-insensitive; each kind of rule at most once), plus "due in N days"; the *nudge schedule* — add/remove steps
-(day offset + CC manager) after assignment and around certificate expiry; and *certificate validity*
+(day offset + CC manager) after assignment and around certificate expiry, plus *In-progress course nudges*
+(on/off, max nudges, days without progress); and *certificate validity*
 in months (or never expires; applies to newly issued certificates). A course's
 `defaults` in code seed its row the first time it's registered; after that the database is the
 source of truth. Respect at Work was seeded with: new joiners within 30 days, due in 14, valid 12 months,
@@ -171,6 +172,8 @@ nudges on day 0/4/9/14+mgr/21+mgr and expiry −7/0/7/14+mgr/21+mgr.
 **Notifications are provider-agnostic** (`lib/notifications/`): a nudge is rendered once from its
 template and delivered through every configured provider — email and Slack today. At escalation
 steps the manager is CC'd; providers without CC support (Slack) deliver to the learner only.
+Self-started courses get a soft due date (start + the course's "due in N days"), so `{{due_date}}`
+is always set.
 
 **Message templates** (Admin → Settings → Notification templates): three Markdown templates —
 *Course assigned*, *Reminder* and *Certificate renewal* — each with a subject and button label.

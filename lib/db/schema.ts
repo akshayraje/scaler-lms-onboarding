@@ -261,7 +261,7 @@ export const notifications = pgTable(
     dedupeKey: text("dedupe_key").notNull().unique(),
     userId: text("user_id"),
     courseId: text("course_id"),
-    campaign: text("campaign", { enum: ["new_joiner", "renewal", "test"] }).notNull(),
+    campaign: text("campaign", { enum: ["new_joiner", "renewal", "in_progress", "test"] }).notNull(),
     step: integer("step").notNull(),
     channel: text("channel", { enum: ["email", "slack"] }).notNull(),
     recipient: text("recipient").notNull(),

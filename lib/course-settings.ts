@@ -67,11 +67,27 @@ export function matchesRule(
 /** A nudge step: `day` is relative to the anchor; `ccManager` copies the manager (where the provider supports CC). */
 export type NudgeStep = { day: number; ccManager: boolean };
 
+/**
+ * Recurring "please finish" nudge for anyone with the course in progress (self-started or
+ * assigned). Sent each nudge run (weekdays) using the Reminder template, until the course is
+ * completed or `maxReminders` have gone out. Skipped while the learner is actively progressing.
+ */
+export type InProgressNudge = {
+  enabled: boolean;
+  /** Stop after this many in-progress reminders (per enrollment). */
+  maxReminders: number;
+  /** Only nudge if there's been no progress for this many days (0 = no activity check). */
+  inactiveDays: number;
+};
+
+export const DEFAULT_IN_PROGRESS: InProgressNudge = { enabled: false, maxReminders: 5, inactiveDays: 1 };
+
 export type NudgeSchedule = {
   /** Days after assignment. The first step uses the "Course assigned" template, later ones "Reminder". */
   assignment: NudgeStep[];
   /** Days relative to certificate expiry (negative = before). Only used if certificates expire. */
   renewal: NudgeStep[];
+  inProgress: InProgressNudge;
 };
 
 /** Certificate validity in months; null = never expires. Applies to certificates issued from now on. */
@@ -136,6 +152,12 @@ export function validateCourseSettings(input: unknown): { value?: CourseSettings
   const n = i.nudges ?? {};
   const assignment = validateSteps(n.assignment, "After assignment", 0, errors);
   const renewal = validateSteps(n.renewal, "Around expiry", -60, errors);
+  const ip = { ...DEFAULT_IN_PROGRESS, ...(n.inProgress ?? {}) };
+  const inProgress: InProgressNudge = { enabled: ip.enabled === true, maxReminders: int(ip.maxReminders), inactiveDays: int(ip.inactiveDays) };
+  if (Number.isNaN(inProgress.maxReminders) || inProgress.maxReminders < 1 || inProgress.maxReminders > 30)
+    errors.push("In-progress course nudges: max must be between 1 and 30");
+  if (Number.isNaN(inProgress.inactiveDays) || inProgress.inactiveDays < 0 || inProgress.inactiveDays > 30)
+    errors.push("In-progress course nudges: days without progress must be between 0 and 30");
   if (cov.enabled && !assignment.length) errors.push("Add at least one nudge step after assignment");
 
   const vm = i.certificate?.validityMonths;
@@ -145,7 +167,7 @@ export function validateCourseSettings(input: unknown): { value?: CourseSettings
 
   if (errors.length) return { errors };
   return {
-    value: { coverage: { enabled: !!cov.enabled, rules, dueInDays }, nudges: { assignment, renewal }, certificate: { validityMonths } },
+    value: { coverage: { enabled: !!cov.enabled, rules, dueInDays }, nudges: { assignment, renewal, inProgress }, certificate: { validityMonths } },
     errors,
   };
 }

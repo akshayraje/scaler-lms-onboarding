@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { CourseInfo } from "./context";
 import { MODULE_KINDS, moduleKind } from "./module-kind";
 import { ModuleView } from "./modules";
+import { reloadIfOutdated } from "./outdated";
 
 export type PlayerProps = {
   slug: string;
@@ -44,7 +45,8 @@ export function CoursePlayer({ slug, initialCompleted, renewalDue, validityMonth
   function markComplete(i: number) {
     const id = modules[i].id;
     setCompleted((prev) => new Set(prev).add(id));
-    completeModule(slug, id).catch((e) => console.error(e));
+    // If the app was redeployed meanwhile, reload: the course resumes at this (unsaved) module.
+    completeModule(slug, id).catch((e) => reloadIfOutdated(e) || console.error(e));
   }
 
   function show(i: number) {

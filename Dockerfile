@@ -16,6 +16,9 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Unique per deploy (Railway provides it; other hosts can pass --build-arg NEXT_DEPLOYMENT_ID=…).
+ARG RAILWAY_DEPLOYMENT_ID
+ARG NEXT_DEPLOYMENT_ID
 # No DB at build time: skip the startup migration hook during `next build`.
 RUN SKIP_DB_BOOTSTRAP=1 pnpm build
 

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import type { CourseModule, PracticeQuestion } from "@/lib/course-types";
 import { cn } from "@/lib/utils";
 import { CourseCard, Eyebrow, Feedback, Pill, PlainList, QCount, ScenarioBox, TileGrid } from "./kit";
+import { reloadIfOutdated } from "./outdated";
 
 // React ports of the original render* functions, one component per module type.
 
@@ -410,16 +411,39 @@ function Exam({ slug, mod, isFirst, passThreshold, onBack, onNext }: ViewProps &
     });
   }
 
-  async function submit() {
+  // Answers are kept across a reload forced by a redeploy (see reloadIfOutdated) and resubmitted.
+  const pendingKey = `pending-exam:${slug}`;
+
+  async function submit(given = answers) {
     setPhase("submitting");
     try {
-      setResult(await submitExam(slug, answers));
+      setResult(await submitExam(slug, given));
       setPhase("result");
     } catch (e) {
+      try {
+        sessionStorage.setItem(pendingKey, JSON.stringify(given));
+      } catch {}
+      if (reloadIfOutdated(e)) return;
+      try {
+        sessionStorage.removeItem(pendingKey);
+      } catch {}
       setError(e instanceof Error ? e.message : "Request failed");
       setPhase("error");
     }
   }
+
+  useEffect(() => {
+    let pending: unknown = null;
+    try {
+      pending = JSON.parse(sessionStorage.getItem(pendingKey) ?? "null");
+      sessionStorage.removeItem(pendingKey);
+    } catch {}
+    if (Array.isArray(pending) && pending.length === mod.questions.length && pending.every((n) => Number.isInteger(n))) {
+      setAnswers(pending);
+      void submit(pending);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function retake() {
     setAttempt((n) => n + 1);
@@ -551,6 +575,7 @@ function Acknowledgement({ slug, mod, isFirst, onBack, onNext }: ViewProps & { m
       await acknowledgePolicy(slug);
       onNext();
     } catch (e) {
+      if (reloadIfOutdated(e)) return;
       setError(e instanceof Error ? e.message : "Could not record your acknowledgement");
       setBusy(false);
     }
@@ -593,7 +618,7 @@ function Certificate({ slug, onBack, onMarkComplete }: ViewProps) {
   useEffect(() => {
     getTranscript(slug)
       .then(setT)
-      .catch((e) => setT({ error: e instanceof Error ? e.message : "Request failed" }));
+      .catch((e) => reloadIfOutdated(e) || setT({ error: e instanceof Error ? e.message : "Request failed" }));
     onMarkComplete();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);

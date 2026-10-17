@@ -148,7 +148,7 @@ instances that shouldn't run jobs.
 | Job | Schedule (APP_TIMEZONE) | What it does |
 |---|---|---|
 | HRMS employee sync | daily 02:00 | Pulls the Darwinbox employee master; marks leavers inactive; assigns each course to the employees its **coverage rules** match (creating accounts as needed) |
-| Training nudges | weekdays 10:30 | Nudges (via every configured provider — email, Slack) per each course's **nudge schedule**: after assignment until completed, around certificate expiry, and a recurring **in-progress** reminder (each run, up to N times, only after N days without progress, never on a day with a scheduled nudge) |
+| Training nudges | daily 10:30 | Nudges (via every configured provider — email, Slack) per each course's **nudge schedule**: after assignment until completed, around certificate expiry, and a recurring **in-progress** reminder (each run, up to N times, only after N days without progress, never on a day with a scheduled nudge) |
 
 All credentials are **environment variables** (see `.env.example`): `SLACK_BOT_TOKEN`, `SMTP_*`
 and `DARWINBOX_*` (or `HRMS_PROVIDER=mock`). A channel is active when its variables are set.

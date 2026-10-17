@@ -327,7 +327,7 @@ export function CourseSettingsEditor({ courseId, initial, fieldOptions }: { cour
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Sent with each weekday nudge run until the course is completed or the maximum is reached. Skipped while the person is still
+              Sent with each daily nudge run until the course is completed or the maximum is reached. Skipped while the person is still
               making progress (0 = no activity check), and on days they already got a scheduled nudge above.
             </p>
           </div>

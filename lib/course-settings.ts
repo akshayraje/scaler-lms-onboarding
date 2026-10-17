@@ -69,7 +69,7 @@ export type NudgeStep = { day: number; ccManager: boolean };
 
 /**
  * Recurring "please finish" nudge for anyone with the course in progress (self-started or
- * assigned). Sent each nudge run (weekdays) using the Reminder template, until the course is
+ * assigned). Sent each nudge run (daily) using the Reminder template, until the course is
  * completed or `maxReminders` have gone out. Skipped while the learner is actively progressing.
  */
 export type InProgressNudge = {

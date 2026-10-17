@@ -20,8 +20,8 @@ export const JOBS: Record<JobName, { title: string; description: string; cron: s
   "send-nudges": {
     title: "Training nudges",
     description: "Sends Slack/email reminders to new joiners with pending training and to people whose certificate is expiring or expired.",
-    cron: "30 10 * * 1-5",
-    schedule: "Weekdays at 10:30",
+    cron: "30 10 * * *",
+    schedule: "Daily at 10:30",
     run: ({ runId }) => dispatchNudges({ jobRunId: runId }),
   },
 };
